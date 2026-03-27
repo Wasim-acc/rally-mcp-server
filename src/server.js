@@ -16,7 +16,7 @@ console.log("RALLY_API_KEY:", process.env.RALLY_API_KEY ? "✓ Set" : "✗ NOT S
 
 const BASE_URL = process.env.RALLY_BASE_URL;
 const API_KEY = process.env.RALLY_API_KEY;
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 if (!BASE_URL || !API_KEY) {
   console.error("❌ ERROR: Missing RALLY_BASE_URL or RALLY_API_KEY in .env");
