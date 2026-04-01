@@ -16,41 +16,45 @@ const PORT = process.env.PORT || 3001;
 /* ============================== */
 /* SSE FUNCTION (KEY FIX) */
 /* ============================== */
-
 function startSSE(req, res) {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.setHeader("Access-Control-Allow-Origin", "*");
-
-  res.flushHeaders();
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    "Connection": "keep-alive",
+    "X-Accel-Buffering": "no" // important for proxies (Railway)
+  });
 
   console.log("📡 SSE connected");
 
-  // MCP handshake
-  res.write(`data: ${JSON.stringify({
-    jsonrpc: "2.0",
-    id: 1,
-    result: {
-      protocolVersion: "2024-11-05",
-      capabilities: {},
-      serverInfo: {
-        name: "rally-mcp-server",
-        version: "1.0.0"
-      }
-    }
-  })}\n\n`);
-
-  const interval = setInterval(() => {
-    res.write(`data: ${JSON.stringify({
+  // Send initial MCP handshake
+  res.write(
+    `data: ${JSON.stringify({
       jsonrpc: "2.0",
-      method: "ping"
-    })}\n\n`);
+      id: 1,
+      result: {
+        protocolVersion: "2024-11-05",
+        capabilities: {},
+        serverInfo: {
+          name: "rally-mcp-server",
+          version: "1.0.0"
+        }
+      }
+    })}\n\n`
+  );
+
+  // heartbeat (safe format)
+  const interval = setInterval(() => {
+    try {
+      res.write(`: ping\n\n`); // COMMENT line (safe heartbeat)
+    } catch (e) {
+      clearInterval(interval);
+    }
   }, 15000);
 
   req.on("close", () => {
-    clearInterval(interval);
     console.log("📡 SSE disconnected");
+    clearInterval(interval);
+    res.end();
   });
 }
 
